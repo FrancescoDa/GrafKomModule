@@ -1,5 +1,5 @@
 // js/animation.js
-import * // Impor THREE untuk Vector3 jika belum
+// Impor THREE untuk Vector3 jika belum
 // (atau pastikan THREE tersedia secara global jika Anda tidak menggunakan modul secara ketat)
 // Jika Anda mengimpor * as THREE from 'three'; di main.js, Anda mungkin perlu
 // melewatkan THREE atau THREE.Vector3 ke fungsi ini jika tidak bisa diakses.
