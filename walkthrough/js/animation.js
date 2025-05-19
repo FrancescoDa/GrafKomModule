@@ -1,68 +1,90 @@
 // js/animation.js
-// Impor THREE untuk Vector3 jika belum
-// (atau pastikan THREE tersedia secara global jika Anda tidak menggunakan modul secara ketat)
-// Jika Anda mengimpor * as THREE from 'three'; di main.js, Anda mungkin perlu
-// melewatkan THREE atau THREE.Vector3 ke fungsi ini jika tidak bisa diakses.
-// Namun, karena THREE sudah diimpor di main.js, biasanya ia akan tersedia.
-// Jika error, Anda bisa mengimpornya di sini juga:
 import * as THREE from "three";
 
-
 export function startAnimationLoop(
-    scene,
-    camera,
-    renderer,
-    controls,
-    gameObjects,
-    keyboardState, // Parameter baru
-    moveSpeed, // Parameter baru
-    fastMoveSpeedMultiplier // Parameter baru
+  scene,
+  camera,
+  renderer,
+  controls,
+  gameObjects,
+  keyboardState,
+  moveSpeed,
+  fastMoveSpeedMultiplier
 ) {
-  const clock = new THREE.Clock(); // Untuk delta time, gerakan lebih smooth
+  const clock = new THREE.Clock();
+
+  // Definisikan ketinggian minimum kamera dari tanah (sesuaikan dengan kebutuhan Anda)
+  // Ini adalah jarak vertikal dari 'groundLevel' ke posisi kamera.
+  const cameraMinHeightAboveGround = 1.0; // Misalnya, setinggi 1 unit di atas tanah
+
+  // Dapatkan level tanah. Jika plane Anda tidak selalu ada atau posisinya bisa berubah,
+  // Anda mungkin perlu cara yang lebih dinamis untuk mendapatkan ini.
+  // Untuk saat ini, kita asumsikan plane ada dan posisinya konstan.
+  const groundLevel = gameObjects.plane ? gameObjects.plane.position.y : -1.5; // Default jika plane tidak ada
 
   function animate() {
     requestAnimationFrame(animate);
-    const delta = clock.getDelta(); // Waktu sejak frame terakhir
+    const delta = clock.getDelta();
 
-    controls.update(); // Tetap update OrbitControls untuk damping dan orbit/pan
+    controls.update(); // Update OrbitControls terlebih dahulu
 
     // --- Logika Pergerakan Kamera WASD ---
-    const currentMoveSpeed = keyboardState.Shift ? moveSpeed * fastMoveSpeedMultiplier : moveSpeed;
-    const actualMoveSpeed = currentMoveSpeed * delta * 60; // Normalisasi kecepatan berdasarkan delta time (asumsi target 60FPS)
+    const currentMoveSpeed = keyboardState.Shift
+      ? moveSpeed * fastMoveSpeedMultiplier
+      : moveSpeed;
+    const actualMoveSpeed = currentMoveSpeed * delta * 60;
 
-
-    // Vektor arah maju kamera (tanpa komponen Y agar tidak terbang/tenggelam saat W/S)
     const forward = new THREE.Vector3();
     camera.getWorldDirection(forward);
-    // forward.y = 0; // Opsional: Proyeksikan ke bidang XZ jika tidak ingin terbang
-    // forward.normalize(); // Normalisasi lagi setelah modifikasi Y
+    // Jika Anda ingin gerakan W/S hanya horizontal (tidak terbang/tenggelam karena pitch kamera):
+    // forward.y = 0;
+    // forward.normalize();
 
-    // Vektor arah kanan kamera (diperoleh dari cross product UP dan forward)
     const right = new THREE.Vector3();
-    right.crossVectors(camera.up, forward).normalize(); // Hati-hati dengan urutan cross product untuk arah kanan yang benar
+    right.crossVectors(camera.up, forward).normalize();
+
+    let moved = false; // Flag untuk menandai apakah kamera bergerak karena WASD
 
     if (keyboardState.W) {
-      // Bergerak maju relatif terhadap arah kamera
       camera.position.addScaledVector(forward, actualMoveSpeed);
-      // Karena kita memindahkan kamera, target OrbitControls juga harus ikut bergerak
-      // agar orbit tetap terasa relatif terhadap posisi baru.
       controls.target.addScaledVector(forward, actualMoveSpeed);
+      moved = true;
     }
     if (keyboardState.S) {
-      // Bergerak mundur relatif terhadap arah kamera
       camera.position.addScaledVector(forward, -actualMoveSpeed);
       controls.target.addScaledVector(forward, -actualMoveSpeed);
+      moved = true;
     }
     if (keyboardState.A) {
-      // Bergerak ke kiri relatif terhadap arah kamera
-      // Pergerakan strafing, jadi kita gunakan vektor 'right'
       camera.position.addScaledVector(right, -actualMoveSpeed);
       controls.target.addScaledVector(right, -actualMoveSpeed);
+      moved = true;
     }
     if (keyboardState.D) {
-      // Bergerak ke kanan relatif terhadap arah kamera
       camera.position.addScaledVector(right, actualMoveSpeed);
       controls.target.addScaledVector(right, actualMoveSpeed);
+      moved = true;
+    }
+
+    // --- Batasi Posisi Y Kamera agar Tetap di Atas Tanah ---
+    // Batas ini diterapkan SETELAH OrbitControls.update() dan pergerakan WASD
+    const targetMinCameraY = groundLevel + cameraMinHeightAboveGround;
+
+    if (camera.position.y < targetMinCameraY) {
+      const diffY = targetMinCameraY - camera.position.y;
+      camera.position.y = targetMinCameraY;
+
+      // Jika kamera dipaksa naik, target OrbitControls juga harus disesuaikan
+      // agar orbit tidak terasa "melompat" atau aneh.
+      // Kita hanya sesuaikan Y targetnya.
+      if (
+        controls.target.y <
+          targetMinCameraY - cameraMinHeightAboveGround * 0.5 ||
+        moved
+      ) {
+        // 0.5 adalah contoh, agar target tidak terlalu tinggi
+        controls.target.y += diffY; // Naikkan target sebanyak kamera dinaikkan
+      }
     }
 
     renderer.render(scene, camera);
