@@ -38,7 +38,7 @@ if (!canvas) {
     "https://threejs.org/examples/textures/uv_grid_opengl.jpg";
 
   textureLoader.load(
-    TEXTURE_URL,
+    // TEXTURE_URL,
     // Success callback
     (loadedTexture) => {
       console.log("Tekstur berhasil dimuat.");
