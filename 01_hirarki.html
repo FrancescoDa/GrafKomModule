@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="id">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Hierarchical Cube Touching Spheres - Three.js</title>
+    <style>
+      body {
+        margin: 0;
+        overflow: hidden;
+        background-color: #000000;
+      } /* Latar belakang hitam */
+      canvas {
+        display: block;
+      }
+    </style>
+  </head>
+  <body>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script>
+      // 1. Setup Dasar
+      const scene = new THREE.Scene();
+      const camera = new THREE.PerspectiveCamera(
+        75,
+        window.innerWidth / window.innerHeight,
+        0.1,
+        1000
+      );
+      const renderer = new THREE.WebGLRenderer({ antialias: true });
+
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      document.body.appendChild(renderer.domElement);
+
+      // 2. Membuat Grup Induk untuk Hierarki
+      const objectGroup = new THREE.Group();
+      scene.add(objectGroup);
+
+      // 3. Membuat Kubus Wireframe
+      const cubeSize = 1.5; // Ukuran kubus
+      const cubeGeometry = new THREE.BoxGeometry(cubeSize, cubeSize, cubeSize);
+      const cubeMaterial = new THREE.MeshBasicMaterial({
+        color: 0x00ff00, // Warna hijau terang untuk wireframe
+        wireframe: true,
+      });
+      const cube = new THREE.Mesh(cubeGeometry, cubeMaterial);
+      objectGroup.add(cube);
+
+      // 4. Membuat Bola
+      // Radius bola disesuaikan agar tampak "setengah masuk"
+      // Jika cubeSize adalah 1.5, maka setengah sisinya adalah 0.75.
+      // Agar bola tampak setengah masuk, radiusnya bisa sekitar 0.4 - 0.6 tergantung preferensi.
+      // Mari kita coba radius yang cukup besar agar jelas menembus.
+      const sphereRadius = 0.5; // Radius bola
+      const sphereSegments = 32; // Detail bola (lebih halus)
+
+      // Bola Merah (misalnya di sisi -X kubus)
+      const sphereRedGeometry = new THREE.SphereGeometry(
+        sphereRadius,
+        sphereSegments,
+        sphereSegments
+      );
+      const sphereRedMaterial = new THREE.MeshBasicMaterial({
+        color: 0xff0000,
+      }); // Merah cerah
+      const sphereRed = new THREE.Mesh(sphereRedGeometry, sphereRedMaterial);
+      // Posisikan pusat bola di permukaan sisi -X kubus
+      // (cubeSize / 2) adalah jarak dari pusat kubus ke tengah salah satu sisinya.
+      sphereRed.position.set(-cubeSize / 2, 0, 0);
+      objectGroup.add(sphereRed);
+
+      // Bola Biru (misalnya di sisi -Y kubus / bawah)
+      const sphereBlueGeometry = new THREE.SphereGeometry(
+        sphereRadius,
+        sphereSegments,
+        sphereSegments
+      );
+      const sphereBlueMaterial = new THREE.MeshBasicMaterial({
+        color: 0x0000ff,
+      }); // Biru
+      const sphereBlue = new THREE.Mesh(sphereBlueGeometry, sphereBlueMaterial);
+      // Posisikan pusat bola di permukaan sisi -Y kubus
+      sphereBlue.position.set(0, -cubeSize / 2, 0);
+      objectGroup.add(sphereBlue);
+
+      // 5. Posisi Kamera
+      // Kita perlu sedikit memundurkan kamera dan mungkin menyesuaikan sudutnya
+      // agar mirip dengan gambar referensi.
+      camera.position.set(1.5, 1, 3.5); // Coba posisi ini, bisa disesuaikan
+      camera.lookAt(objectGroup.position); // Kamera melihat ke pusat grup
+
+      // 6. Fungsi Animasi
+      function animate() {
+        requestAnimationFrame(animate);
+
+        // Rotasi seluruh grup objek
+        objectGroup.rotation.x += 0.005;
+        objectGroup.rotation.y += 0.008;
+        // objectGroup.rotation.z += 0.003; // Opsional rotasi Z
+
+        renderer.render(scene, camera);
+      }
+
+      // 7. Menangani Perubahan Ukuran Jendela
+      window.addEventListener("resize", onWindowResize, false);
+
+      function onWindowResize() {
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+      }
+
+      // Mulai animasi
+      animate();
+    </script>
+  </body>
+</html>
